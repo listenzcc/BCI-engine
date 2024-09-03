@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    {% include "src/head.html" %}
+</head>
+
+<body>
+    {% include "layout/header.html" %}
+
+    <section class="container-md">
+        <!-- Intro -->
+        <div class="text-center">
+            <h1>{% include "layout/projectName.html"%}</h1>
+            <p>
+                iofjwof
+                faefoawejfihjf
+                foaewfaewj
+            </p>
+        </div>
+
+        <!-- SSVEP Controller -->
+
+
+        <div class="container text-center">
+            <h2>SSVEP Controller</h2>
+            <!-- Start SSVEP display -->
+            <div class="mx-auto p-2 text-center">
+                <a id="startSSVEPDisplay" href="javascript:void(0)">Start SSVEP Display</a>
+            </div>
+
+            <!-- Other SSVEP display controls -->
+            <div class="row align-items-center">
+                <div class="col">
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            SSVEP Layout: columns
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns4">4 columns</a></li>
+                            <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns5">5 columns</a></li>
+                            <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns6">6 columns</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SSVEP Reporter-->
+        <div class="container text-center">
+            <div class="row align-items-center">
+                <div class="col">
+                    <p>Received SSVEP passedSeconds</p>
+                </div>
+                <div class="col">
+                    <p id="ssvepPassedSeconds">--</p>
+                </div>
+            </div>
+
+            <div class="row align-items-center">
+                <div class="col">
+                    <p>Better SSVEP passedSeconds</p>
+                </div>
+                <div class="col">
+                    <p id="ssvepPassedSecondsBetter">--</p>
+                </div>
+            </div>
+        </div>
+
+
+    </section>
+
+    <script src="static/js/ssvepControl.js" type="text/javascript"></script>
+
+    {% include "layout/footer.html" %}
+</body>
+
+<tail>
+    {% include "src/tail.html" %}
+</tail>
+
+</html>
