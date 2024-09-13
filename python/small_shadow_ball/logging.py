@@ -18,6 +18,9 @@ Functions:
 
 # %% ---- 2024-08-08 ------------------------
 # Requirements and constants
+import os
+
+from pathlib import Path
 from loguru import logger
 from .conf import conf
 
@@ -26,7 +29,9 @@ from .conf import conf
 # Function and class
 projectName = conf.get('projectName', 'NoNamedProject')
 
-logger.add(f'log/{projectName}.log', rotation='5 MB')
+logger.add(Path(
+    os.environ.get('HOME', '.'), f'log/{projectName}.log'),
+    rotation='5 MB')
 
 
 # %% ---- 2024-08-08 ------------------------

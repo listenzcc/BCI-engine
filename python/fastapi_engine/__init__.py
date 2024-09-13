@@ -18,9 +18,9 @@ Functions:
 
 # %% ---- 2024-08-07 ------------------------
 # Requirements and constants
-import sys
-from pathlib import Path
-sys.path.append(Path(__file__).parent.parent)  # noqa
+# import sys
+# from pathlib import Path
+# sys.path.append(Path(__file__).parent.parent)  # noqa
 
 from small_shadow_ball.logging import logger
 from small_shadow_ball.websocket_sync import SyncWebsocketTalk

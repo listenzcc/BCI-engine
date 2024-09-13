@@ -19,6 +19,7 @@ Functions:
 # %% ---- 2024-08-07 ------------------------
 # Requirements and constants
 import cv2
+import time
 import numpy as np
 
 from PIL import Image
@@ -94,6 +95,7 @@ class CameraReady(object):
     def _keep_capturing(self):
         '''Keep capturing the camera'''
         logger.info('Start capturing')
+        patch = self.empty_patch()
         while self.running:
             try:
                 success, m = self.cap.read()
@@ -107,6 +109,7 @@ class CameraReady(object):
                 patch = self.empty_patch()
 
             self.patch = patch.convert(self.mode)
+            time.sleep(0.1)
         logger.info('Stopped capturing')
 
 

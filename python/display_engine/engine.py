@@ -35,7 +35,6 @@ tr = RunningTimer('Frontend')
 
 # Set CameraReady
 cr = CameraReady(width=ssp.width//4, height=ssp.height//6)
-cr.start_capture_threads()
 
 
 # %% ---- 2024-08-07 ------------------------
@@ -97,6 +96,9 @@ def start_display():
 
     # Reset the timer
     tr.reset()
+
+    # Start the camera looping
+    cr.start_capture_threads()
 
     # Set the painting method
     def _on_timeout():

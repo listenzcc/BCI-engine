@@ -32,17 +32,23 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QMainWindow, QApplication, QLabel
 
+from word_engine.engine import SSVEPWordBag
+
 from . import logger, SyncWebsocketTalk
 from .timer import RunningTimer
 
 small_font = ImageFont.truetype("arial.ttf", 24)
 large_font = ImageFont.truetype("arial.ttf", 64)
+large_font = ImageFont.truetype("c:\\windows\\fonts\\msyhl.ttc", 64)
+
 
 # %% ---- 2024-08-07 ------------------------
 # Function and class
 _app = QApplication(sys.argv)
 
 swt = SyncWebsocketTalk()
+
+swb = SSVEPWordBag()
 
 
 class SSVEPLayout(object):
@@ -51,8 +57,10 @@ class SSVEPLayout(object):
     n = 0  # top bound
     s = 100  # bottom bound
     columns = 6  # number of columns
+    rows: int = 6
     paddingRatio = 0.2
     char_sequence = [e for e in 'abcdefghijklmnopqrstuvwxyz1234567890']
+    cue_index: int = 0
 
     def reset_box(self, w, n, e, s):
         self.w = w
@@ -65,6 +73,18 @@ class SSVEPLayout(object):
 
     def shuffle_char_sequence(self):
         np.random.shuffle(self.char_sequence)
+
+        # Get layout
+        layout = self.get_layout()
+
+        # Setup swb
+        n = len(layout)
+        sequence, cue_index = swb.mk_layout(
+            num_patches=n,
+            fixed_positions={n-3: 'Back', n-2: 'Space', n-1: 'Enter'})
+        self.char_sequence = sequence
+        self.cue_index = cue_index
+        return
 
     def get_layout(self):
         '''
@@ -107,6 +127,8 @@ class SSVEPLayout(object):
                     char=self.char_sequence[patch_id % len(self.char_sequence)]
                 ))
                 patch_id += 1
+
+        self.rows = rows
         return layout
 
 
@@ -313,15 +335,28 @@ class SSVEPScreenPainter(object):
             passed = self.rt.get()
             if passed > change_char_next_passed:
                 change_char_next_passed += change_char_step
+
+                # Simulation of the **right** char is selected.
+                if swb.pre_designed_sequence:
+                    swb.append_prompt(swb.consume(
+                        swb.pre_designed_sequence[0]))
+
                 ssvep_layout.shuffle_char_sequence()
                 self.empty_img()
 
             # Get layout
             layout = ssvep_layout.get_layout()
+
             # Modify the passed seconds with speed_factor
             z = passed * speed_factor
             with self.rlock:
-                for p in layout:
+                # Draw the prompt
+                prompt = ''.join(swb.prompt)
+                self.img_drawer.text(
+                    (0, 0), prompt, font=large_font, anchor='lt')
+
+                for i, p in enumerate(layout):
+                    # Draw the patch
                     x = p['x']
                     y = p['y']
                     size = p['size']
@@ -329,12 +364,23 @@ class SSVEPScreenPainter(object):
                     char = p['char']
                     f = (opensimplex.noise3(x=x, y=y, z=z)+1) * 0.5
                     c = int(f * 256)
+
+                    # Draw the box
                     self.img_drawer.rectangle(
                         (x, y, x+size, y+size), fill=(c, c, c, c))
+
+                    if i == ssvep_layout.cue_index:
+                        self.img_drawer.rectangle(
+                            (x+size*0.8, y, x+size, y+size*0.2), fill=(150, 0, 0, 255))
+
+                    # Draw the index number
                     self.img_drawer.text(
                         (x, y), f'{patch_id}', font=small_font)
+
+                    # Draw the face char
+                    _font = large_font if len(char) == 1 else small_font
                     self.img_drawer.text(
-                        (x+size/2, y+size/2), char, font=large_font, anchor='mm')
+                        (x+size/2, y+size/2), char, font=_font, anchor='mm')
 
             # Blink on the right top corner in 50x50 pixels size if not focused
             if not self.flag_has_focus:

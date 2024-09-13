@@ -18,11 +18,16 @@ Functions:
 
 # %% ---- 2024-08-07 ------------------------
 # Requirements and constants
+import sys
+from pathlib import Path
+
 import uvicorn
 
 
 # %% ---- 2024-08-07 ------------------------
 # Function and class
+# ! Append the folder into the python system path in the first place
+sys.path.append(Path(__file__).parent)
 
 
 # %% ---- 2024-08-07 ------------------------
