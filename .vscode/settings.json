@@ -1,3 +1,10 @@
 {
-  "cSpell.words": ["loguru", "omegaconf", "SSVEP", "uvicorn", "websockets"]
+  "cSpell.words": [
+    "loguru",
+    "omegaconf",
+    "pyvda",
+    "SSVEP",
+    "uvicorn",
+    "websockets"
+  ]
 }

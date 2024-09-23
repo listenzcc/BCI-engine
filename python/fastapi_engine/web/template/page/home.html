@@ -11,17 +11,10 @@
     <section class="container-md">
         <!-- Intro -->
         <div class="text-center">
-            <h1>{% include "layout/projectName.html"%}</h1>
-            <p>
-                iofjwof
-                faefoawejfihjf
-                foaewfaewj
-            </p>
+            {% include "layout/projectIntro.html"%}
         </div>
 
         <!-- SSVEP Controller -->
-
-
         <div class="container text-center">
             <h2>SSVEP Controller</h2>
             <!-- Start SSVEP display -->
@@ -30,6 +23,7 @@
             </div>
 
             <!-- Other SSVEP display controls -->
+            <!-- SSVEP columns -->
             <div class="row align-items-center">
                 <div class="col">
                     <div class="dropdown">
@@ -45,6 +39,18 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SSVEP pre designed sequence -->
+            <div class="row align-items-center">
+                <div class="col">
+                    <textarea id="textareaOfPreDesignedSequence"></textarea>
+                </div>
+                <div class="col">
+                    <a id="appendSSVEPPreDesignedSequence" href="javascript:void(0)">Append Pre Designed
+                        Sequence</a>
+                </div>
+            </div>
+
         </div>
 
         <!-- SSVEP Reporter-->

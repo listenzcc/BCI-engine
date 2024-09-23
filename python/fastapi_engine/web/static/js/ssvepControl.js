@@ -10,6 +10,18 @@ function startSSVEPDisplay() {
 
 d3.select('#startSSVEPDisplay').on('click', startSSVEPDisplay)
 
+
+// ----------------------------------------
+// ---- Append the pre designed sequence ----
+function appendPreDesignedSequence() {
+    let text = document.getElementById('textareaOfPreDesignedSequence').value
+    d3.json(`appendPreDefinedSequence.json?text=${text}`).then(json => {
+        console.log(json)
+    })
+}
+
+d3.select('#appendSSVEPPreDesignedSequence').on('click', appendPreDesignedSequence)
+
 // ----------------------------------------------------------------
 // SSVEP other display controls
 {
@@ -60,7 +72,6 @@ class RunningTimer {
 }
 
 let rt = new RunningTimer()
-
 
 /**
  * Checkout SSVEP passed seconds

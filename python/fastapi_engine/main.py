@@ -143,6 +143,30 @@ async def checkout_passed_seconds(request: Request):
 
 
 # ----------------------------------------
+# ---- SSVEP append chars ----
+@app.get('/appendPreDefinedSequence.json')
+async def append_predefined_sequence(request: Request, text: str):
+    '''Append the text into the SSVEP predefined_sequence
+
+    Args:
+        - request: The request.
+        - text [str]: The text to be appended.
+
+    Returns:
+        - received [dict]: The dictionary containing the raw input, status and updated sequence.
+    '''
+    dct = dict(cmd='append predefined sequence', text=text)
+    try:
+        received = swt.send_and_recv(dct)
+    except ConnectionRefusedError as err:
+        logger.error(f'Failed checkout, {err}')
+        raise HTTPException(
+            status_code=404, detail='Failed appendPredefinedSequence')
+    logger.debug(f'Received {received}')
+    return received
+
+
+# ----------------------------------------
 # ---- SSVEP control ----
 
 

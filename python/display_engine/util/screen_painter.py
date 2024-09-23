@@ -32,7 +32,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QMainWindow, QApplication, QLabel
 
-from word_engine.engine import SSVEPWordBag
+from word_engine.engine import SSVEPWordBag, SendToWindowsApp
 
 from . import logger, SyncWebsocketTalk
 from .timer import RunningTimer
@@ -49,6 +49,8 @@ _app = QApplication(sys.argv)
 swt = SyncWebsocketTalk()
 
 swb = SSVEPWordBag()
+
+stwa = SendToWindowsApp()
 
 
 class SSVEPLayout(object):
@@ -82,8 +84,15 @@ class SSVEPLayout(object):
         sequence, cue_index = swb.mk_layout(
             num_patches=n,
             fixed_positions={n-3: 'Back', n-2: 'Space', n-1: 'Enter'})
+
+        # If there is prompt and cue_index is -1,
+        # Setup the cue_index to the n-1 (Enter) patch
+        if swb.prompt and cue_index == -1:
+            cue_index = n-1
+
         self.char_sequence = sequence
         self.cue_index = cue_index
+
         return
 
     def get_layout(self):
@@ -317,7 +326,8 @@ class SSVEPScreenPainter(object):
         self.rt.reset()
 
         # Reset the ssvep layout box
-        ssvep_layout.reset_box(0, self.height/6, self.width, self.height)
+        header_height = self.height/6
+        ssvep_layout.reset_box(0, header_height, self.width, self.height)
 
         # The flipping rate is slower when the speed_factor is lower
         speed_factor = 1
@@ -326,6 +336,9 @@ class SSVEPScreenPainter(object):
         change_char_next_passed = change_char_step
         ssvep_layout.shuffle_char_sequence()
 
+        # The stage flag for the sending protocol
+        sending_protocol_stage = 0
+
         logger.debug('Starting')
         while self.rt.running:
             # Update the timer to the next frame
@@ -333,16 +346,45 @@ class SSVEPScreenPainter(object):
 
             # Get the current time
             passed = self.rt.get()
+
+            # If the trial finished, shuffle the sequence for the next trial
             if passed > change_char_next_passed:
                 change_char_next_passed += change_char_step
 
-                # Simulation of the **right** char is selected.
+                # -----------------------------------------------
+                # Simulation block starts
+                # If there is still pre_designed_sequence remaining, append the 1st element.
                 if swb.pre_designed_sequence:
                     swb.append_prompt(swb.consume(
                         swb.pre_designed_sequence[0]))
+                    sending_protocol_stage = 0
+
+                # Send the prompt
+                if sending_protocol_stage == 1:
+                    prompt = swb.prompt
+                    swb.prompt = []
+                    stwa.send(''.join(prompt))
+                    logger.debug(f'Sending the {prompt}')
+                    sending_protocol_stage = 2
+                    logger.debug('Increased sending_protocol_stage to 2')
 
                 ssvep_layout.shuffle_char_sequence()
+
+                # If the input char is 'Enter', increase the sending_protocol_stage to 1
+                if all([
+                    ssvep_layout.cue_index > -1,
+                    ssvep_layout.char_sequence[ssvep_layout.cue_index] == 'Enter'
+                ]):
+                    sending_protocol_stage = 1
+                    logger.debug('Increased sending_protocol_stage to 1')
+
+                # Simulation block ends
+                # -----------------------------------------------
+
                 self.empty_img()
+
+            # Compute trial ratio
+            tr = (change_char_next_passed - passed) / change_char_step
 
             # Get layout
             layout = ssvep_layout.get_layout()
@@ -353,7 +395,17 @@ class SSVEPScreenPainter(object):
                 # Draw the prompt
                 prompt = ''.join(swb.prompt)
                 self.img_drawer.text(
-                    (0, 0), prompt, font=large_font, anchor='lt')
+                    (0, header_height/2), prompt, font=large_font, anchor='lt')
+
+                # Draw the progressing bar
+                self.img_drawer.rectangle(
+                    (0, header_height-2, self.width, header_height),
+                    fill=(150, 150, 150, 0)
+                )
+                self.img_drawer.rectangle(
+                    (0, header_height-2, tr*self.width, header_height),
+                    fill=(150, 150, 150, 150)
+                )
 
                 for i, p in enumerate(layout):
                     # Draw the patch
@@ -369,6 +421,7 @@ class SSVEPScreenPainter(object):
                     self.img_drawer.rectangle(
                         (x, y, x+size, y+size), fill=(c, c, c, c))
 
+                    # Draw the cue hinter
                     if i == ssvep_layout.cue_index:
                         self.img_drawer.rectangle(
                             (x+size*0.8, y, x+size, y+size*0.2), fill=(150, 0, 0, 255))
@@ -431,6 +484,14 @@ class SSVEPScreenPainter(object):
                 # Empty the img
                 self.empty_img()
                 message.update(status='Success')
+
+            # Append the text into the predefined sequence
+            elif cmd == 'append predefined sequence':
+                text = message.get('text')
+                seq = list(text)
+                swb.pre_designed_sequence.extend(seq)
+                message.update(status='Success', updated=''.join(
+                    swb.pre_designed_sequence))
 
             # Unknown command
             else:
