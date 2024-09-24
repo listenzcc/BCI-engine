@@ -15,46 +15,76 @@
         </div>
 
         <!-- SSVEP Controller -->
-        <div class="container text-center">
-            <h2>SSVEP Controller</h2>
-            <!-- Start SSVEP display -->
-            <div class="mx-auto p-2 text-center">
-                <a id="startSSVEPDisplay" href="javascript:void(0)">Start SSVEP Display</a>
+        <div class="container text-center my-4 shadow">
+            <div class="my-2 py-2">
+                <h2 class="fw-semibold fs-3">SSVEP remote controller</h2>
             </div>
 
-            <!-- Other SSVEP display controls -->
-            <!-- SSVEP columns -->
-            <div class="row align-items-center">
-                <div class="col">
-                    <div class="dropdown">
-                        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                            aria-expanded="false">
-                            SSVEP Layout: columns
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns4">4 columns</a></li>
-                            <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns5">5 columns</a></li>
-                            <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns6">6 columns</a></li>
-                        </ul>
+            <div class="container py-2">
+                <div class="d-flex flex-wrap justify-content-evenly">
+                    <div class="shadow p-2 m-2 rounded-4"
+                        style="background-image: url(/static/img/click.jpg); background-size: cover">
+                        <!-- <img src="/static/img/click.jpg" width="200px" alt="" srcset=""> -->
+                        <div style="height:10em"></div>
+                        <h3 class="fs-4 border-bottom border-secondary border-2 mb-4 text-white">Buttons</h3>
+
+                        <div class="my-2">
+                            <button type="button" class="btn btn-primary" onclick="startSSVEPDisplay()">Start SSVEP
+                                Session</button>
+                        </div>
+
+                        <div class="my-2 dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                SSVEP Layout: columns
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns4">4 columns</a></li>
+                                <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns5">5 columns</a></li>
+                                <li><a class="dropdown-item" href="#" id="ssvepLayoutColumns6">6 columns</a></li>
+                            </ul>
+                        </div>
+
+                        <div class="my-2">
+                            <button type="button" class="btn btn-secondary fs-6"
+                                onclick="appendPreDesignedSequence()">Append
+                                Pre
+                                Designed
+                                Sequence</button>
+                        </div>
+
                     </div>
+
+                    <div class="shadow p-2 m-2 rounded-4"
+                        style="background-image: url(/static/img/books.jpg); background-size: cover">
+                        <h3 class="fs-4 border-bottom border-secondary border-2 mb-4 text-white">Inputs</h3>
+                        <div>
+                            <div class="form-floating">
+                                <textarea id="textareaOfPreDesignedSequence" class="form-control"
+                                    placeholder="Leave a comment here" id="floatingTextarea2"
+                                    style="height: 100px"></textarea>
+                                <label for="floatingTextarea2" class="text-body-tertiary fs-6 fst-italic">Pre
+                                    Designed
+                                    Sequence</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="shadow p-2 m-2 rounded-4"
+                        style="background-image: url(/static/img/timer.jpg); background-size: cover; width: 10em">
+                        <h3 class="fs-4 border-bottom border-secondary border-2 mb-4 text-white">Timer</h3>
+                        <p class="text-white bg-black">
+                            <span id="ssvepPassedSecondsBetter">--</span> Seconds
+                        </p>
+                    </div>
+
                 </div>
             </div>
-
-            <!-- SSVEP pre designed sequence -->
-            <div class="row align-items-center">
-                <div class="col">
-                    <textarea id="textareaOfPreDesignedSequence"></textarea>
-                </div>
-                <div class="col">
-                    <a id="appendSSVEPPreDesignedSequence" href="javascript:void(0)">Append Pre Designed
-                        Sequence</a>
-                </div>
-            </div>
-
         </div>
 
+
         <!-- SSVEP Reporter-->
-        <div class="container text-center">
+        <div style="display:none" class="container text-center">
             <div class="row align-items-center">
                 <div class="col">
                     <p>Received SSVEP passedSeconds</p>
@@ -69,7 +99,6 @@
                     <p>Better SSVEP passedSeconds</p>
                 </div>
                 <div class="col">
-                    <p id="ssvepPassedSecondsBetter">--</p>
                 </div>
             </div>
         </div>

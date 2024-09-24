@@ -8,9 +8,6 @@ function startSSVEPDisplay() {
     checkoutSSVEPPassedSeconds()
 }
 
-d3.select('#startSSVEPDisplay').on('click', startSSVEPDisplay)
-
-
 // ----------------------------------------
 // ---- Append the pre designed sequence ----
 function appendPreDesignedSequence() {
@@ -19,8 +16,6 @@ function appendPreDesignedSequence() {
         console.log(json)
     })
 }
-
-d3.select('#appendSSVEPPreDesignedSequence').on('click', appendPreDesignedSequence)
 
 // ----------------------------------------------------------------
 // SSVEP other display controls

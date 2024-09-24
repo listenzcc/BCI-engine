@@ -24,6 +24,7 @@ import time
 import opensimplex
 import numpy as np
 
+from enum import Enum
 from threading import Thread, RLock
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageQt import ImageQt
@@ -39,6 +40,7 @@ from .timer import RunningTimer
 
 small_font = ImageFont.truetype("arial.ttf", 24)
 large_font = ImageFont.truetype("arial.ttf", 64)
+small_font = ImageFont.truetype("c:\\windows\\fonts\\msyhl.ttc", 24)
 large_font = ImageFont.truetype("c:\\windows\\fonts\\msyhl.ttc", 64)
 
 
@@ -53,12 +55,20 @@ swb = SSVEPWordBag()
 stwa = SendToWindowsApp()
 
 
+class SSVEPInputStage(Enum):
+    awaitInputWithCue = 1
+    awaitInputWithoutCue = 2
+    awaitEnter = 3
+    awaitApp = 4
+    default = 5
+
+
 class SSVEPLayout(object):
     w = 0  # left bound
     e = 100  # right bound
     n = 0  # top bound
     s = 100  # bottom bound
-    columns = 6  # number of columns
+    columns: int = 6  # number of columns
     rows: int = 6
     paddingRatio = 0.2
     char_sequence = [e for e in 'abcdefghijklmnopqrstuvwxyz1234567890']
@@ -73,7 +83,7 @@ class SSVEPLayout(object):
     def reset_columns(self, columns):
         self.columns = columns
 
-    def shuffle_char_sequence(self):
+    def _deprecated_shuffle_char_sequence(self):
         np.random.shuffle(self.char_sequence)
 
         # Get layout
@@ -85,15 +95,9 @@ class SSVEPLayout(object):
             num_patches=n,
             fixed_positions={n-3: 'Back', n-2: 'Space', n-1: 'Enter'})
 
-        # If there is prompt and cue_index is -1,
-        # Setup the cue_index to the n-1 (Enter) patch
-        if swb.prompt and cue_index == -1:
-            cue_index = n-1
-
         self.char_sequence = sequence
         self.cue_index = cue_index
-
-        return
+        return n
 
     def get_layout(self):
         '''
@@ -332,12 +336,132 @@ class SSVEPScreenPainter(object):
         # The flipping rate is slower when the speed_factor is lower
         speed_factor = 1
 
-        change_char_step = 5  # seconds
+        change_char_step = 4  # seconds
         change_char_next_passed = change_char_step
-        ssvep_layout.shuffle_char_sequence()
 
         # The stage flag for the sending protocol
-        sending_protocol_stage = 0
+        class SendingProtocolStage:
+            stage = SSVEPInputStage.default
+
+        sps = SendingProtocolStage()
+
+        # ssvep_layout.shuffle_char_sequence()
+
+        def _on_trial_stops():
+            '''Called when the trial stops, prepare to the next trial.'''
+            # n = ssvep_layout.shuffle_char_sequence()
+
+            # ----------------------------------------
+            # ---- Consume input chars ----
+            # ! Now it is only applied for input with cue
+            if sps.stage is SSVEPInputStage.awaitInputWithCue:
+                swb.append_prompt(swb.consume(swb.pre_designed_sequence[0]))
+
+            # ----------------------------------------
+            # ---- Determine stage ----
+
+            # The latest stage is awaitEnter, so this trial selects app to send.
+            # ! This option rejects other stages.
+            if sps.stage is SSVEPInputStage.awaitEnter:
+                # Get patches layout
+                # ! incase I need another layout for the app selection trial
+                layout = ssvep_layout.get_layout()
+                n = len(layout)
+
+                # Manually control the patches face
+                fixed_positions = {k: '' for k in range(n)}
+                fixed_positions.update({0: '微信', 1: '文档1 - Word'})
+
+                sequence, cue_index = swb.mk_layout(
+                    num_patches=n, fixed_positions=fixed_positions)
+
+                # Save the layout
+                ssvep_layout.char_sequence = sequence
+                ssvep_layout.cue_index = 1
+
+                # Switch the stage
+                sps.stage = SSVEPInputStage.awaitApp
+
+                return
+
+            # Pass through the awaitApp stage
+            elif sps.stage is SSVEPInputStage.awaitApp:
+                pass
+
+            # No cue available and prompt is NOT empty,
+            # it is ready to enter for sending the prompt.
+            elif all([len(swb.pre_designed_sequence) == 0, len(swb.prompt_buffer) > 0]):
+                sps.stage = SSVEPInputStage.awaitEnter
+
+            # No cue available and prompt is empty,
+            # it is freedom input.
+            elif all([len(swb.pre_designed_sequence) == 0, len(swb.prompt_buffer) == 0]):
+                sps.stage = SSVEPInputStage.awaitInputWithoutCue
+
+            # Cue available, it is cued input.
+            elif all([len(swb.pre_designed_sequence) > 0]):
+                sps.stage = SSVEPInputStage.awaitInputWithCue
+
+            else:
+                logger.error(f'Met incorrect stage: {sys.stage}')
+
+            # ----------------------------------------
+            # ---- Operations ----
+
+            # Get patches layout
+            layout = ssvep_layout.get_layout()
+            n = len(layout)
+
+            # Handle normal input stage
+            if sps.stage in [SSVEPInputStage.awaitInputWithCue, SSVEPInputStage.awaitInputWithoutCue]:
+                sequence, cue_index = swb.mk_layout(
+                    num_patches=n,
+                    fixed_positions={n-3: 'Back', n-2: 'Space', n-1: 'Enter'})
+                ssvep_layout.char_sequence = sequence
+                ssvep_layout.cue_index = cue_index
+
+            # Handle enter input stage
+            if sps.stage is SSVEPInputStage.awaitEnter:
+                sequence, cue_index = swb.mk_layout(
+                    num_patches=n,
+                    fixed_positions={n-3: 'Back', n-2: 'Space', n-1: 'Enter'})
+
+                if not cue_index == -1:
+                    logger.warning(
+                        f'The cue_index supports to be -1, but it is actually: {cue_index}')
+
+                ssvep_layout.char_sequence = sequence
+                ssvep_layout.cue_index = n-1
+
+            # App selection
+            if sps.stage is SSVEPInputStage.awaitApp:
+                # Send the prompt to the app
+                app_title = ssvep_layout.char_sequence[ssvep_layout.cue_index]
+                content = ''.join(swb.prompt_buffer)
+                swb.prompt_buffer = []
+                try:
+                    stwa.send(content, app_title)
+                    logger.debug(
+                        f'The selected app is {app_title}, and the sending content is {content}')
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    logger.error(f'Failed send {content} to app: {app_title}')
+
+                # Restore the stage
+                sps.stage = SSVEPInputStage.default
+
+                # Execute itself AGAIN to update the layout
+                _on_trial_stops()
+
+            return
+
+        # Execute the _on_trial_stops for a good startup
+        _on_trial_stops()
+        # Get layout
+        layout = ssvep_layout.get_layout()
+        # Empty the img to clear the latest patches content.
+        self.empty_img()
 
         logger.debug('Starting')
         while self.rt.running:
@@ -348,52 +472,25 @@ class SSVEPScreenPainter(object):
             passed = self.rt.get()
 
             # If the trial finished, shuffle the sequence for the next trial
+            # ! It is called when the trial stops.
             if passed > change_char_next_passed:
+                # Step the time passed threshold to the next trial.
                 change_char_next_passed += change_char_step
-
-                # -----------------------------------------------
-                # Simulation block starts
-                # If there is still pre_designed_sequence remaining, append the 1st element.
-                if swb.pre_designed_sequence:
-                    swb.append_prompt(swb.consume(
-                        swb.pre_designed_sequence[0]))
-                    sending_protocol_stage = 0
-
-                # Send the prompt
-                if sending_protocol_stage == 1:
-                    prompt = swb.prompt
-                    swb.prompt = []
-                    stwa.send(''.join(prompt))
-                    logger.debug(f'Sending the {prompt}')
-                    sending_protocol_stage = 2
-                    logger.debug('Increased sending_protocol_stage to 2')
-
-                ssvep_layout.shuffle_char_sequence()
-
-                # If the input char is 'Enter', increase the sending_protocol_stage to 1
-                if all([
-                    ssvep_layout.cue_index > -1,
-                    ssvep_layout.char_sequence[ssvep_layout.cue_index] == 'Enter'
-                ]):
-                    sending_protocol_stage = 1
-                    logger.debug('Increased sending_protocol_stage to 1')
-
-                # Simulation block ends
-                # -----------------------------------------------
-
+                # Execute the _on_trial_stops handler.
+                _on_trial_stops()
+                # Get layout
+                layout = ssvep_layout.get_layout()
+                # Empty the img to clear the latest patches content.
                 self.empty_img()
 
             # Compute trial ratio
             tr = (change_char_next_passed - passed) / change_char_step
 
-            # Get layout
-            layout = ssvep_layout.get_layout()
-
             # Modify the passed seconds with speed_factor
             z = passed * speed_factor
             with self.rlock:
                 # Draw the prompt
-                prompt = ''.join(swb.prompt)
+                prompt = ''.join(swb.prompt_buffer)
                 self.img_drawer.text(
                     (0, header_height/2), prompt, font=large_font, anchor='lt')
 

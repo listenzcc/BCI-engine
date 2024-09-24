@@ -78,13 +78,17 @@ class SendToWindowsApp(object):
     '''
     title = '微信'
 
-    def send(self, string: str):
+    def send(self, string: str, app_title: str = None):
         '''
         Send the string to the window of title.
 
         Args:
+            - app_title (str): The title of the application to send to.
             - string (str) : The string to be sent.
         '''
+        if app_title is None:
+            app_title = self.title
+
         # Get all the applications
         applications = pyvda.get_apps_by_z_order(current_desktop=False)
 
@@ -93,7 +97,7 @@ class SendToWindowsApp(object):
 
         # Filter the applications according to its title
         applications = [
-            app for app in applications if get_title(app) == self.title]
+            app for app in applications if get_title(app) == app_title]
 
         # Set the interval for safety sending
         interval = 0.2  # Seconds
@@ -102,7 +106,7 @@ class SendToWindowsApp(object):
             switch_to_app(app, dry_run=False)
             time.sleep(interval)
             logger.debug(f'Switched to application: {app}')
-            keyboard.write(string)
+            keyboard.write(string, delay=0)
             keyboard.press_and_release('Enter')
             time.sleep(interval)
             logger.debug(f'Sent content: {string}')
@@ -126,7 +130,7 @@ class SSVEPWordBag(object):
     other_chars: list = list('abcdefghijklmnopqrstuvwxyz1234567890')
     # pre_designed_sequence: list = list('观自在菩萨')
     pre_designed_sequence: list = list('观自')
-    prompt: list = []
+    prompt_buffer: list = []
 
     def __init__(self):
         logger.debug('Initialized')
@@ -210,8 +214,8 @@ class SSVEPWordBag(object):
         '''
         # Prevent the inp is empty or None
         if inp:
-            self.prompt.append(inp)
-        return self.prompt
+            self.prompt_buffer.append(inp)
+        return self.prompt_buffer
 
 
 # %% ---- 2024-09-11 ------------------------
