@@ -137,31 +137,39 @@ async def checkout_passed_seconds(request: Request):
     except ConnectionRefusedError as err:
         logger.error(f'Failed checkout, {err}')
         raise HTTPException(
-            status_code=404, detail='Failed checkoutPassedSeconds.json')
+            status_code=404, detail='Failed checkoutPassedSeconds.json'
+        ) from err
     logger.debug(f'Received {received}')
     return received
 
 
 # ----------------------------------------
 # ---- SSVEP append chars ----
-@app.get('/appendPreDefinedSequence.json')
-async def append_predefined_sequence(request: Request, text: str):
-    '''Append the text into the SSVEP predefined_sequence
+@app.get('/appendCueSequence.json')
+async def append_cue_sequence(request: Request, text: str):
+    """
+Appends a cue sequence to the JSON response.
 
-    Args:
-        - request: The request.
-        - text [str]: The text to be appended.
+Args:
+    request: The incoming request object.
+    text (str): The text to append to the cue sequence.
 
-    Returns:
-        - received [dict]: The dictionary containing the raw input, status and updated sequence.
-    '''
-    dct = dict(cmd='append predefined sequence', text=text)
+Returns:
+    The response received from the send_and_recv function.
+
+Raises:
+    HTTPException: If the connection is refused.
+
+"""
+
+    dct = dict(cmd='append cue sequence', text=text)
     try:
         received = swt.send_and_recv(dct)
     except ConnectionRefusedError as err:
         logger.error(f'Failed checkout, {err}')
         raise HTTPException(
-            status_code=404, detail='Failed appendPredefinedSequence')
+            status_code=404, detail='Failed appendCueSequence'
+        ) from err
     logger.debug(f'Received {received}')
     return received
 
@@ -186,7 +194,8 @@ async def change_ssvep_layout_columns(request: Request, columns: int):
     except ConnectionRefusedError as err:
         logger.error(f'Failed checkout, {err}')
         raise HTTPException(
-            status_code=404, detail='Failed checkoutPassedSeconds.json')
+            status_code=404, detail='Failed checkoutPassedSeconds.json'
+        ) from err
     logger.debug(f'Received {received}')
     return received
 

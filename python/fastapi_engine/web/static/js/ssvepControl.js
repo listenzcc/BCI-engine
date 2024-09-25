@@ -10,10 +10,20 @@ function startSSVEPDisplay() {
 
 // ----------------------------------------
 // ---- Append the pre designed sequence ----
-function appendPreDesignedSequence() {
-    let text = document.getElementById('textareaOfPreDesignedSequence').value
-    d3.json(`appendPreDefinedSequence.json?text=${text}`).then(json => {
+function appendCueSequence() {
+    let dom = document.getElementById('textareaOfCueSequence'),
+        text = dom.value;
+    d3.json(`appendCueSequence.json?text=${text}`).then(json => {
         console.log(json)
+        d3.select('#preDesignedCueSequence').select('li').text(dom.value)
+        dom.value = ''
+    })
+}
+
+{
+    let dom = document.getElementById('textareaOfCueSequence')
+    d3.select('#preDesignedCueSequence').selectAll('li').on('click', evt => {
+        dom.value = evt.target.textContent
     })
 }
 

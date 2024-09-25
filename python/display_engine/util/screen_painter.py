@@ -16,6 +16,7 @@ Functions:
 """
 
 
+import itertools
 # %% ---- 2024-08-07 ------------------------
 # Requirements and constants
 import sys
@@ -128,18 +129,18 @@ class SSVEPLayout(object):
         rows = int((self.s - self.n) / d)
         size = int((ws[1] - ws[0]) * (1-self.paddingRatio))
 
-        layout = []
-        patch_id = 0
-        for i in range(rows):
-            for j in range(self.columns):
-                layout.append(dict(
-                    patch_id=patch_id,
-                    size=size,
-                    x=int(self.w + d * j + (d-size)/2),
-                    y=int(self.n + d * i + (d-size)/2),
-                    char=self.char_sequence[patch_id % len(self.char_sequence)]
-                ))
-                patch_id += 1
+        layout = [
+            dict(
+                patch_id=patch_id,
+                size=size,
+                x=int(self.w + d * j + (d - size) / 2),
+                y=int(self.n + d * i + (d - size) / 2),
+                char=self.char_sequence[patch_id % len(self.char_sequence)],
+            )
+            for patch_id, (i, j) in enumerate(
+                itertools.product(range(rows), range(self.columns))
+            )
+        ]
 
         self.rows = rows
         return layout
@@ -355,7 +356,7 @@ class SSVEPScreenPainter(object):
             # ---- Consume input chars ----
             # ! Now it is only applied for input with cue
             if sps.stage is SSVEPInputStage.awaitInputWithCue:
-                swb.append_prompt(swb.consume(swb.pre_designed_sequence[0]))
+                swb.append_prompt(swb.consume(swb.cue_sequence[0]))
 
             # ----------------------------------------
             # ---- Determine stage ----
@@ -390,16 +391,16 @@ class SSVEPScreenPainter(object):
 
             # No cue available and prompt is NOT empty,
             # it is ready to enter for sending the prompt.
-            elif all([len(swb.pre_designed_sequence) == 0, len(swb.prompt_buffer) > 0]):
+            elif all([len(swb.cue_sequence) == 0, len(swb.prompt_buffer) > 0]):
                 sps.stage = SSVEPInputStage.awaitEnter
 
             # No cue available and prompt is empty,
             # it is freedom input.
-            elif all([len(swb.pre_designed_sequence) == 0, len(swb.prompt_buffer) == 0]):
+            elif all([len(swb.cue_sequence) == 0, len(swb.prompt_buffer) == 0]):
                 sps.stage = SSVEPInputStage.awaitInputWithoutCue
 
             # Cue available, it is cued input.
-            elif all([len(swb.pre_designed_sequence) > 0]):
+            elif all([len(swb.cue_sequence) > 0]):
                 sps.stage = SSVEPInputStage.awaitInputWithCue
 
             else:
@@ -426,7 +427,7 @@ class SSVEPScreenPainter(object):
                     num_patches=n,
                     fixed_positions={n-3: 'Back', n-2: 'Space', n-1: 'Enter'})
 
-                if not cue_index == -1:
+                if cue_index != -1:
                     logger.warning(
                         f'The cue_index supports to be -1, but it is actually: {cue_index}')
 
@@ -544,7 +545,7 @@ class SSVEPScreenPainter(object):
 
             # Continue after sleep
             time.sleep(0.001)
-            pass
+
         logger.debug('Stopped')
         return
 
@@ -583,12 +584,12 @@ class SSVEPScreenPainter(object):
                 message.update(status='Success')
 
             # Append the text into the predefined sequence
-            elif cmd == 'append predefined sequence':
+            elif cmd == 'append cue sequence':
                 text = message.get('text')
                 seq = list(text)
-                swb.pre_designed_sequence.extend(seq)
+                swb.cue_sequence.extend(seq)
                 message.update(status='Success', updated=''.join(
-                    swb.pre_designed_sequence))
+                    swb.cue_sequence))
 
             # Unknown command
             else:
