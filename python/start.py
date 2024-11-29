@@ -34,7 +34,9 @@ sys.path.append(Path(__file__).parent)
 # Play ground
 if __name__ == "__main__":
     # Use the string import to enable reload option.
-    uvicorn.run("fastapi_engine.main:wa.app", reload=True, host="172.20.10.7")
+    host = "172.20.10.7"
+    host = 'localhost'
+    uvicorn.run("fastapi_engine.main:wa.app", reload=True, host=host)
 
 
 # %% ---- 2024-08-07 ------------------------

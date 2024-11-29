@@ -16,12 +16,13 @@ Functions:
 """
 
 
-import itertools
 # %% ---- 2024-08-07 ------------------------
 # Requirements and constants
 import sys
 import json
 import time
+import random
+import itertools
 import opensimplex
 import numpy as np
 
@@ -34,7 +35,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QMainWindow, QApplication, QLabel
 
-from word_engine.engine import SSVEPWordBag, SendToWindowsApp
+from word_engine.engine import SSVEPWordBag, SendToWindowsApp, get_app_and_titles
 
 from . import logger, SyncWebsocketTalk
 from .timer import RunningTimer
@@ -370,15 +371,27 @@ class SSVEPScreenPainter(object):
                 n = len(layout)
 
                 # Manually control the patches face
+                # Get all the apps in the current desktop,
+                # and mark the titles (could be used as cue) as the cue candidates.
                 fixed_positions = {k: '' for k in range(n)}
-                fixed_positions.update({0: '微信', 1: '文档1 - Word'})
+                cue_candidate_list = []
+                for i, dct in enumerate(get_app_and_titles()[:n]):
+                    title = dct['title']
+                    fixed_positions.update({i: title})
+                    if any([title.endswith(' - 记事本'), title.endswith(' - Word')]):
+                        cue_candidate_list.append(i)
+
+                # fixed_positions.update({0: '无标题 - 记事本', 1: '文档1 - Word'})
 
                 sequence, cue_index = swb.mk_layout(
                     num_patches=n, fixed_positions=fixed_positions)
 
                 # Save the layout
                 ssvep_layout.char_sequence = sequence
-                ssvep_layout.cue_index = 1
+                if cue_candidate_list:
+                    ssvep_layout.cue_index = random.choice(cue_candidate_list)
+                else:
+                    ssvep_layout.cue_index = None
 
                 # Switch the stage
                 sps.stage = SSVEPInputStage.awaitApp
@@ -530,8 +543,11 @@ class SSVEPScreenPainter(object):
 
                     # Draw the face char
                     _font = large_font if len(char) == 1 else small_font
+                    _char = char
+                    if len(char) > 7:
+                        _char = '...'.join((char[:3], char[-3:]))
                     self.img_drawer.text(
-                        (x+size/2, y+size/2), char, font=_font, anchor='mm')
+                        (x+size/2, y+size/2), _char, font=_font, anchor='mm')
 
             # Blink on the right top corner in 50x50 pixels size if not focused
             if not self.flag_has_focus:

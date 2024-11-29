@@ -86,6 +86,35 @@ def switch_to_app(app: pyvda.AppView, dry_run: bool = False):
     return
 
 
+def get_app_and_titles(current_desktop=True):
+    """
+    Retrieves a list of applications and their corresponding titles along with a flag indicating the current application.
+
+    Parameters:
+    - current_desktop (bool): If True, only applications on the current desktop are considered. If False, all applications are considered.
+
+    Returns:
+    - res (list): A list of dictionaries, where each dictionary contains the following keys:
+        - app: The AppView object representing the application.
+        - title: The title of the application window.
+        - currentFlag: A boolean indicating whether the application is the current application.
+    """
+    # Get all the applications
+    applications = pyvda.get_apps_by_z_order(current_desktop=False)
+
+    # Remember the current application
+    current_application = pyvda.AppView.current()
+
+    # Get the titles
+    res = [dict(
+        app=e,
+        title=get_title(e),
+        currentFlag=e == current_application)
+        for e in applications]
+
+    return res
+
+
 class SendToWindowsApp(object):
     '''
     Send text to windows application.
